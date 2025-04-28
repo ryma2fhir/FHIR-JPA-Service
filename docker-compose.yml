@@ -1,0 +1,13 @@
+services:
+  hapi-fhir-jpa-server:
+    image: hapiproject/hapi:latest
+    container_name: hapi-fhir-jpa-server
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./packages:/packages
+      - ./entrypoint.sh:/entrypoint.sh
+    entrypoint: ["/bin/bash", "/entrypoint.sh"]
+    environment:
+      - HAPI_FHIR_VERSION=R4
+    restart: unless-stopped
