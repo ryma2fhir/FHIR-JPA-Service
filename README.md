@@ -4,11 +4,17 @@
 
 1. Place your FHIR NPM packages (`.tgz` files) into the `./packages/` folder.
 
-2. Edit `docker-compose.yml`:
-   - Update the `HAPI_FHIR_VALIDATION_PACKAGES` environment variable to list your packages.
-   - Example: `/packages/hl7.fhir.uk.core-1.0.0.tgz,/packages/hl7.fhir.r4.core-4.0.1.tgz`
+2. make addPackages bash script executable. This adds all the packages in /packages to the JAP server.
+- chmod +x addPackages.sh
 
 3. Start the server:
 
 ```bash
 docker-compose up -d
+```
+4. Go to http://localhost:8080/ or http://localhost:8080/fhir/
+
+5. Stop the server
+```bash
+docker-compose down
+```

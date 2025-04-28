@@ -6,8 +6,8 @@ services:
       - "8080:8080"
     volumes:
       - ./packages:/packages
-      - ./entrypoint.sh:/entrypoint.sh
-    entrypoint: ["/bin/bash", "/entrypoint.sh"]
+      - ./addPackages.sh:/addPackages.sh
+    entrypoint: ["/bin/bash", "/addPackages.sh"]
     environment:
       - HAPI_FHIR_VERSION=R4
     restart: unless-stopped
