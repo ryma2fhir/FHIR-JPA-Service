@@ -2,19 +2,25 @@
 
 ## How to Use
 
-1. Place your FHIR NPM packages (`.tgz` files) into the `./packages/` folder.
+1. Ensure docker is installed using `docker --version`
 
-2. make addPackages bash script executable. This adds all the packages in /packages to the JAP server.
-- chmod +x addPackages.sh
-
-3. Start the server:
-
+2. Within the parent directory run
 ```bash
-docker-compose up -d
+docker run -p 8080:8080 -v $(pwd)/FHIR-JPA-Service:/configs -e "--spring.config.location=file:///configs/hapi.application.yaml" hapiproject/hapi:latest
 ```
-4. Go to http://localhost:8080/ or http://localhost:8080/fhir/
 
-5. Stop the server
-```bash
-docker-compose down
-```
+3. go to:
+- http://localhost:8080 for the landing page
+- http://localhost:8080/fhir for swagger
+
+## Details
+The docker container [hapiproject/hapi:latest](https://hub.docker.com/r/hapiproject/hapi) is the offical HL7 latest release of the [hapi-fhir-jpaserver-starter](https://github.com/hapifhir/hapi-fhir-jpaserver-starter).
+The hapi.application.yaml is a copy of [application.yaml](https://github.com/hapifhir/hapi-fhir-jpaserver-starter/blob/master/src/main/resources/application.yaml) which has been modified to include the neccessary packages
+
+`docker run` runs the docker container
+`-p 8080:8080` Map port 8080 inside the container to port 8080 on your host (if 8090:8080, 8090 would be inside the container)
+`$(pwd)/FHIR-JPA-Service:/configs` mount the local folder FHIR-JPA-Service at path /configs
+`e "--spring.config.location=file:///configs/hapi.application.yaml"` set environment variable to use the custom config file hapi.application.yaml within the newly mounted local folder configs
+`hapiproject/hapi:latest` use the latest hapi project docker image
+
+

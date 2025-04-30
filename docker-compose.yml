@@ -1,13 +1,15 @@
 services:
-  hapi-fhir-jpa-server:
-    image: hapiproject/hapi:latest
-    container_name: hapi-fhir-jpa-server
+  fhir:
+    container_name: fhir
+    image: "hapiproject/hapi:latest"
     ports:
       - "8080:8080"
-    volumes:
-      - ./packages:/packages
-      - ./addPackages.sh:/addPackages.sh
-    environment:
-      - HAPI_FHIR_VERSION=R4
-    restart: unless-stopped
-    command: ["/bin/sh", "-c", "/addPackages.sh && /docker-entrypoint.sh"]
+    configs:
+      - source: hapi
+        target: /app/config/application.yaml
+
+configs:
+  hapi:
+     file: ./hapi.application.yaml
+
+
