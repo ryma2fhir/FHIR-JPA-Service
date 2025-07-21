@@ -13,6 +13,8 @@ docker run -p 8080:8080 -v $(pwd)/FHIR-JPA-Service:/configs -e "--spring.config.
 - http://localhost:8080 for the landing page
 - http://localhost:8080/fhir for swagger
 
+4. to add packages to hapi see `fhir.implementationguides` within [hapi.application.yaml](https://github.com/ryma2fhir/FHIR-JPA-Service/blob/main/hapi.application.yaml)
+
 ## Details
 The docker container [hapiproject/hapi:latest](https://hub.docker.com/r/hapiproject/hapi) is the offical HL7 latest release of the [hapi-fhir-jpaserver-starter](https://github.com/hapifhir/hapi-fhir-jpaserver-starter).
 The hapi.application.yaml is a copy of [application.yaml](https://github.com/hapifhir/hapi-fhir-jpaserver-starter/blob/master/src/main/resources/application.yaml) which has been modified to include the neccessary packages
