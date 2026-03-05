@@ -80,7 +80,8 @@ A Spring `@Configuration` class that explicitly registers `TerminologyOperationI
 
 - Docker and Docker Compose
 - Java 17+ and Maven (for building)
-- NHS Ontology Server client credentials (from [NHS TRUD](https://isd.digital.nhs.uk/trud/))
+- Request a system-to-system account
+ (from [The NHS England terminology server](https://digital.nhs.uk/services/terminology-server#how-to-access-this-service))
 
 ---
 
