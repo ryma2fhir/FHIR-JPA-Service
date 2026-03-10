@@ -7,23 +7,29 @@
 2. Within the parent directory build the maven package and run the docker container
 ```bash
 mvn package
-docker compose -up
+docker compose up -d
 ```
-3. go to:
-- http://localhost:8080 for the landing page
-- http://localhost:8080/fhir for swagger
 
-4. to add packages to hapi see `fhir.implementationguides` within [hapi.application.yaml](https://github.com/ryma2fhir/FHIR-JPA-Service/blob/main/hapi.application.yaml)
+3. Go to:
+- http://localhost:8080 for the landing page
+- http://localhost:8080/fhir/swagger-ui/ for Swagger UI
+
+4. To add packages to HAPI see `fhir.implementationguides` within [hapi.application.yaml](hapi.application.yaml), or use the helper script:
+```bash
+python3 update-packages.py
+```
 
 ## Details
-The docker container [hapiproject/hapi:vx.x.x](https://hub.docker.com/r/hapiproject/hapi) is the offical HL7 release of the [hapi-fhir-jpaserver-starter](https://github.com/hapifhir/hapi-fhir-jpaserver-starter).
-The hapi.application.yaml is a copy of [application.yaml](https://github.com/hapifhir/hapi-fhir-jpaserver-starter/blob/master/src/main/resources/application.yaml) which has been modified to include the neccessary packages
+The docker container [hapiproject/hapi:vx.x.x](https://hub.docker.com/r/hapiproject/hapi) is the official HL7 release of the [hapi-fhir-jpaserver-starter](https://github.com/hapifhir/hapi-fhir-jpaserver-starter).
+The `hapi.application.yaml` is a copy of [application.yaml](https://github.com/hapifhir/hapi-fhir-jpaserver-starter/blob/master/src/main/resources/application.yaml) which has been modified to include the necessary packages.
 
---- 
+---
 
 # HAPI FHIR Terminology Interceptor
 
-This project adds authenticated terminology support to the [HAPI FHIR JPA Server](https://hapifhir.io/) Docker image, enabling it to proxy terminology operations (`$expand`, `$validate-code`, `$lookup`, `$translate`) to the [NHS Ontology Server](https://ontology.nhs.uk/) (Ontoserver) using OAuth2 client credentials.
+This project adds authenticated terminology support and XML Swagger UI visibility to the [HAPI FHIR JPA Server](https://hapifhir.io/) Docker image.
+
+It proxies terminology operations (`$expand`, `$validate-code`, `$lookup`, `$translate`) to the [NHS Ontology Server](https://ontology.nhs.uk/) (Ontoserver) using OAuth2 client credentials, and patches the OpenAPI spec so `application/fhir+xml` appears alongside JSON in the Swagger UI.
 
 Out of the box, HAPI FHIR cannot expand SNOMED CT ValueSets because it does not hold the terminology content locally. This interceptor forwards those requests to a remote terminology server that does, injecting a Bearer token automatically.
 
@@ -36,6 +42,8 @@ Client → HAPI FHIR → TerminologyOperationInterceptor → NHS Ontology Server
                               ↑
                     TerminologyInterceptor
                     (fetches & caches OAuth2 token)
+
+Browser → Swagger UI → /fhir/api-docs → OpenApiCustomizer → patched spec (XML added)
 ```
 
 1. A request hits HAPI FHIR for a terminology operation (e.g. `POST /fhir/ValueSet/$expand`)
@@ -54,7 +62,8 @@ HAPI's local database is never consulted for these operations.
 src/main/java/com/nhs/
 ├── TerminologyInterceptor.java           # OAuth2 token management
 ├── TerminologyOperationInterceptor.java  # Servlet filter — proxies terminology requests
-└── TerminologyFilterConfig.java          # Registers the filter with Spring Boot
+├── TerminologyFilterConfig.java          # Registers servlet filters with Spring Boot
+└── OpenApiCustomizer.java               # Patches OpenAPI spec to add XML content type
 ```
 
 ### TerminologyInterceptor
@@ -62,7 +71,7 @@ Implements HAPI's `IClientInterceptor`. Manages the OAuth2 token lifecycle:
 - Fetches a token from `ONTO_AUTH_URL` using `ONTO_CLIENT_ID` and `ONTO_CLIENT_SECRET`
 - Caches the token in memory and refreshes it 60 seconds before expiry
 - Thread-safe via double-checked locking
-- Also registered with HAPI's `remote_terminology` client for validation operations
+- Exposes `getBearerToken()` for use by the proxy filter
 
 ### TerminologyOperationInterceptor
 A Spring `OncePerRequestFilter` that runs at the servlet level, before HAPI touches the request:
@@ -72,7 +81,13 @@ A Spring `OncePerRequestFilter` that runs at the servlet level, before HAPI touc
 - Streams the remote response back to the caller unchanged
 
 ### TerminologyFilterConfig
-A Spring `@Configuration` class that explicitly registers `TerminologyOperationInterceptor` as a servlet filter scoped to `/fhir/*`. This is required because the JAR is loaded dynamically by HAPI's class loader, so Spring's component scan alone is not sufficient.
+A Spring `@Configuration` class that explicitly registers both servlet filters. Required because the JAR is loaded dynamically by HAPI's class loader, so `@Component` alone is not sufficient.
+
+### OpenApiCustomizer
+A Spring `OncePerRequestFilter` that intercepts the `/fhir/api-docs` response:
+- Detects whether the spec is YAML (default) or JSON
+- Parses it with Jackson, adds `application/fhir+xml` wherever `application/fhir+json` appears
+- Writes the patched spec back so Swagger UI shows XML as a content type option on all endpoints
 
 ---
 
@@ -80,14 +95,13 @@ A Spring `@Configuration` class that explicitly registers `TerminologyOperationI
 
 - Docker and Docker Compose
 - Java 17+ and Maven (for building)
-- Request a system-to-system account
- (from [The NHS England terminology server](https://digital.nhs.uk/services/terminology-server#how-to-access-this-service))
+- Request a system-to-system account (from [The NHS England terminology server](https://digital.nhs.uk/services/terminology-server#how-to-access-this-service))
 
 ---
 
 ## Configuration
 
-All secrets are stored in a `.env` file in the project root. **Never commit this file to version control.**
+All secrets are stored in a `.env` file in the project root. **Never commit this file to version control.** A `.env.example` is provided as a template.
 
 ```
 ONTO_AUTH_URL=https://ontology.nhs.uk/authorisation/auth/realms/nhs-digital-terminology/protocol/openid-connect/token
@@ -107,7 +121,24 @@ ONTO_SERVER_URL=https://ontology.nhs.uk/production1/fhir
 
 ## Build & Deploy
 
-### 1. Build the JAR
+### 1. Clone and configure
+
+```bash
+git clone <repo>
+cd <repo>
+cp .env.example .env
+# Fill in your credentials in .env
+```
+
+### 2. Add implementation guides (optional)
+
+Edit `package.json` to add FHIR packages, then run:
+
+```bash
+python3 update-packages.py
+```
+
+### 3. Build the JAR
 
 ```bash
 mvn package
@@ -115,7 +146,7 @@ mvn package
 
 This produces `target/term-interceptor-1.0.jar`.
 
-### 2. Start the server
+### 4. Start the server
 
 ```bash
 docker compose up -d
@@ -127,21 +158,23 @@ Docker Compose will:
 - Mount `hapi.application.yaml` as the server config
 - Inject all environment variables from `.env`
 
-### 3. Verify it's working
+### 5. Verify it's working
 
 ```bash
-docker compose logs fhir | grep -i "proxy\|token\|interceptor"
+docker compose logs fhir | grep -i "proxy\|token\|interceptor\|openapi"
 ```
 
 On the first terminology request you should see:
 ```
 [CONFIG] Terminology proxy filter registered for /fhir/*
+[CONFIG] OpenAPI XML customizer filter registered.
 [PROXY] Intercepted POST /fhir/ValueSet/$expand — forwarding to https://ontology.nhs.uk/production1/fhir
 [INTERCEPTOR] Refreshing OAuth2 token...
 [INTERCEPTOR] Token refreshed. Expires in 300 s.
+[OPENAPI] Injected application/fhir+xml into spec.
 ```
 
-### 4. Test
+### 6. Test terminology
 
 ```bash
 curl -X POST "http://localhost:8080/fhir/ValueSet/\$expand" \
@@ -155,21 +188,25 @@ curl -X POST "http://localhost:8080/fhir/ValueSet/\$expand" \
   }'
 ```
 
+### 7. Test XML via Swagger UI
+
+Open `http://localhost:8080/fhir/swagger-ui/` — all endpoints should now show `application/fhir+xml` in the request body dropdown alongside JSON.
+
 ---
 
 ## Updating HAPI FHIR
 
 When a new HAPI FHIR version is released:
 
-1. Check the available Docker tags:
+1. Check available Docker tags:
 ```bash
 curl -s "https://registry.hub.docker.com/v2/repositories/hapiproject/hapi/tags?page_size=10" \
   | python3 -m json.tool | grep '"name"'
 ```
 
-2. Update the image tag in `docker-compose.yml`:
+2. Update the image tag in `docker-compose.yml` (use the non `-tomcat` variant):
 ```yaml
-image: "hapiproject/hapi:v9.x.x-1"   # not the -tomcat variant
+image: "hapiproject/hapi:v9.x.x-1"
 ```
 
 3. Update the HAPI version in `pom.xml`:
@@ -206,7 +243,11 @@ docker compose logs fhir | tail -50
 
 **ValueSet too large error**
 - This comes from Ontoserver, not HAPI — the interceptor is working correctly
-- Use a more specific SNOMED concept or add `count` parameter to limit results
+- Use a more specific SNOMED concept or add a `count` parameter to limit results
+
+**XML not showing in Swagger UI**
+- Check `[OPENAPI] Injected` appears in logs after visiting Swagger UI
+- Hard refresh the browser (Ctrl+Shift+R) to clear the cached spec
 
 **Rebuilding after code changes**
 ```bash

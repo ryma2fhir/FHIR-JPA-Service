@@ -26,4 +26,17 @@ public class TerminologyFilterConfig {
         System.out.println("[CONFIG] Terminology proxy filter registered for /fhir/*");
         return registration;
     }
+
+    @Bean
+    public FilterRegistrationBean<OpenApiCustomizer> openApiFilter() {
+        FilterRegistrationBean<OpenApiCustomizer> registration =
+                new FilterRegistrationBean<>(new OpenApiCustomizer());
+
+        registration.addUrlPatterns("/fhir/api-docs", "/fhir/api-docs/*");
+        registration.setOrder(2);
+        registration.setName("openApiCustomizerFilter");
+
+        System.out.println("[CONFIG] OpenAPI XML customizer filter registered.");
+        return registration;
+    }
 }
