@@ -24,6 +24,7 @@ public class TerminologyInterceptor implements IClientInterceptor {
     private final String TOKEN_URL;
     private final String CLIENT_ID;
     private final String CLIENT_SECRET;
+    private final String SNOMED_VERSION;
 
     // --- Token state ---
     private volatile String token = "";
@@ -36,21 +37,14 @@ public class TerminologyInterceptor implements IClientInterceptor {
     private final ObjectMapper objectMapper = new ObjectMapper();
 
     public TerminologyInterceptor() {
-        // Fail fast at startup if any required env var is missing
         this.TOKEN_URL     = requireEnv("ONTO_AUTH_URL");
         this.CLIENT_ID     = requireEnv("ONTO_CLIENT_ID");
         this.CLIENT_SECRET = requireEnv("ONTO_CLIENT_SECRET");
-    }
-
-    // -------------------------------------------------------------------------
-    // Public token accessor (used by TerminologyOperationInterceptor)
-    // -------------------------------------------------------------------------
-
-    public String getBearerToken() {
-        if (token.isEmpty() || Instant.now().isAfter(expiry.minusSeconds(60))) {
-            refreshToken();
-        }
-        return token;
+        String version = System.getenv("SNOMED_VERSION");
+        this.SNOMED_VERSION = (version != null && !version.isBlank())
+                ? version
+                : "http://snomed.info/sct/83821000000107/version/20260311";
+        System.out.println("[INTERCEPTOR] Using SNOMED version: " + this.SNOMED_VERSION);
     }
 
     // -------------------------------------------------------------------------
@@ -59,18 +53,35 @@ public class TerminologyInterceptor implements IClientInterceptor {
 
     @Override
     public void interceptRequest(IHttpRequest theRequest) {
-        // Refresh if missing or expiring within the next 60 seconds
+        // Refresh token if missing or expiring within the next 60 seconds
         if (token.isEmpty() || Instant.now().isAfter(expiry.minusSeconds(60))) {
             refreshToken();
         }
         if (!token.isEmpty()) {
             theRequest.addHeader("Authorization", "Bearer " + token);
         }
+
+        // Inject SNOMED version for all $validate-code calls that don't already
+        // specify one. The URL is just the Ontoserver base + CodeSystem/$validate-code
+        // — it won't contain "snomed", so we check for the operation name only.
+        try {
+            String uri = theRequest.getUri();
+            if (uri.contains("$validate-code") && !uri.contains("system-version")) {
+                String separator = uri.contains("?") ? "&" : "?";
+                String newUri = uri + separator
+                        + "system-version="
+                        + URLEncoder.encode(SNOMED_VERSION, StandardCharsets.UTF_8);
+                theRequest.setUri(newUri);
+                System.out.println("[INTERCEPTOR] Injected system-version into: " + newUri);
+            }
+        } catch (Exception e) {
+            System.err.println("[INTERCEPTOR] Could not inject SNOMED version: " + e.getMessage());
+        }
     }
 
     @Override
     public void interceptResponse(IHttpResponse theResponse) {
-        // No-op: nothing to do with the terminology server's response
+        // No-op
     }
 
     // -------------------------------------------------------------------------
@@ -78,7 +89,6 @@ public class TerminologyInterceptor implements IClientInterceptor {
     // -------------------------------------------------------------------------
 
     private synchronized void refreshToken() {
-        // Re-check inside the lock — another thread may have already refreshed
         if (!token.isEmpty() && Instant.now().isBefore(expiry.minusSeconds(60))) {
             return;
         }
@@ -86,7 +96,6 @@ public class TerminologyInterceptor implements IClientInterceptor {
         System.out.println("[INTERCEPTOR] Refreshing OAuth2 token...");
 
         try {
-            // URL-encode the form fields to handle special characters safely
             String form = "grant_type=client_credentials"
                     + "&client_id="     + URLEncoder.encode(CLIENT_ID,     StandardCharsets.UTF_8)
                     + "&client_secret=" + URLEncoder.encode(CLIENT_SECRET, StandardCharsets.UTF_8);
@@ -102,7 +111,6 @@ public class TerminologyInterceptor implements IClientInterceptor {
                     httpClient.send(request, HttpResponse.BodyHandlers.ofString());
 
             if (response.statusCode() == 200) {
-                // Use Jackson so we're robust to key ordering and whitespace
                 JsonNode json = objectMapper.readTree(response.body());
 
                 this.token = Objects.requireNonNull(
@@ -110,7 +118,6 @@ public class TerminologyInterceptor implements IClientInterceptor {
                         "Response JSON did not contain 'access_token'"
                 );
 
-                // Honour the server-supplied lifetime; fall back to 300 s if absent
                 long expiresIn = json.path("expires_in").asLong(300);
                 this.expiry = Instant.now().plusSeconds(expiresIn);
 
@@ -122,7 +129,6 @@ public class TerminologyInterceptor implements IClientInterceptor {
             }
 
         } catch (Exception e) {
-            // Log but don't rethrow — a failed refresh should not crash the FHIR server
             System.err.println("[INTERCEPTOR ERROR] Exception during token refresh: " + e.getMessage());
         }
     }
@@ -130,6 +136,13 @@ public class TerminologyInterceptor implements IClientInterceptor {
     // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
+
+    public String getBearerToken() {
+        if (token.isEmpty() || Instant.now().isAfter(expiry.minusSeconds(60))) {
+            refreshToken();
+        }
+        return token;
+    }
 
     private static String requireEnv(String name) {
         String value = System.getenv(name);

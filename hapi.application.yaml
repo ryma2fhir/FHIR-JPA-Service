@@ -1,22 +1,14 @@
-# -------------------------------------------------------------------------------------
-# Server & Spring Boot
-# -------------------------------------------------------------------------------------
 server:
-  # Uncomment to serve FHIR under a non-default context path (e.g., /example/path/fhir)
-  # servlet:
-  #   context-path: /example/path
   port: 8080
   tomcat:
-    # allow | as a separator in URLs
     relaxed-query-chars: "|"
 
 management:
-  # Actuator endpoints: only /actuator/health exposed by default
   endpoints:
     enabled-by-default: false
     web:
       exposure:
-        include: "health"  # or "info,health,prometheus,metrics" or "*" for all
+        include: "health"
   endpoint:
     info:
       enabled: true
@@ -39,7 +31,6 @@ management:
 spring:
   application:
     name: "@project.artifactId@"
-
   ai:
     mcp:
       server:
@@ -49,20 +40,16 @@ spring:
         enabled: true
         streamable-http:
           mcp-endpoint: /mcp/messages
-
   main:
     allow-bean-definition-overriding: false
     allow-circular-references: true
     banner-mode: off
-
   autoconfigure:
     exclude: org.springframework.boot.autoconfigure.elasticsearch.ElasticsearchRestClientAutoConfiguration
-
   flyway:
     enabled: false
     baseline-on-migrate: true
     fail-on-missing-locations: false
-
   datasource:
     url: jdbc:h2:mem:test_mem
     username: sa
@@ -70,7 +57,6 @@ spring:
     driver-class-name: org.h2.Driver
     hikari:
       maximum-pool-size: 10
-
   jpa:
     properties:
       hibernate:
@@ -87,42 +73,52 @@ spring:
           use_structured_entries: false
           use_minimal_puts: false
 
-# -------------------------------------------------------------------------------------
-# HAPI FHIR — grouped by domain
-# -------------------------------------------------------------------------------------
 hapi:
   fhir:
-    # --- A. Core Server ---
     openapi_enabled: true
     fhir_version: R4
-    allow_external_references: true        # ← lift the external reference block
+    allow_external_references: true
     allow_external_valueset_expansion: true
 
-    # --- B. Terminology ---
     terminology:
       valueset_preexpansion_mode: IGNORE
       valueset_expansion_mode: USE_EXPANSION_OPERATION
-      valueset_membership_mode: USE_EXPANSION
-      code_lookup_mode: AUTO
-      allow_external_valueset_expansion: true
+      valueset_membership_mode: USE_VALIDATE_CODE_OPERATION
+      code_lookup_mode: USE_VALIDATE_CODE_OPERATION
       remote_terminology:
         - url: '${ONTO_SERVER_URL}'
           client_interceptor_beans:
             - terminologyInterceptor
 
-    # --- C. Data ---
+    remote_terminology_service:
+      snomed:
+        system: "http://snomed.info/sct/83821000000107/version/20260211"
+        system_version: "http://snomed.info/sct/83821000000107/version/20260211"
+        url: '${ONTO_SERVER_URL}'
+        client_interceptor_beans:
+          - terminologyInterceptor
+
+    logical_urls:
+      - http://terminology.hl7.org/*
+      - https://terminology.hl7.org/*
+
+    implementationguides:
+      ukcore:
+        name: fhir.r4.ukcore.stu3.currentbuild
+        version: 0.28.0-pre-release
+        reloadExisting: false
+        installMode: STORE_AND_INSTALL
+
     data:
       search_parameter_mode: USE_SEARCH_PARAMETERS
       terminology_parameter_mode: USE_VALUE_SET_URL
       profile_mode: DECLARED
 
-    # --- D. Extensibility ---
     custom-bean-packages:
       - com.nhs
     custom-interceptor-classes:
       - com.nhs.TerminologyInterceptor
 
-    # --- E. Clinical Reasoning ---
     cr:
       enabled: false
       caregaps:
