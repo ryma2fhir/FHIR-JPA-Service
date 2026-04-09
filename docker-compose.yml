@@ -11,10 +11,6 @@ services:
     environment:
       - hapi_fhir_custom_bean_packages=com.nhs
       - hapi_fhir_custom_interceptor_classes=com.nhs.TerminologyInterceptor
-      # Secrets passed in from .env
-      - ONTO_AUTH_URL
-      - ONTO_CLIENT_ID
-      - ONTO_CLIENT_SECRET
-      - ONTO_SERVER_URL        # used by hapi.application.yaml remote_terminology url
       - LOGGING_LEVEL_CA_UHN_FHIR_JPA_TERMINOLOGY=DEBUG
-      - LOGGING_LEVEL_ORG_SPRINGFRAMEWORK_BOOT_CONTEXT_CONFIG=DEBUG
+      - LOGGING_LEVEL_CA_UHN_FHIR_VALIDATION=DEBUG
+      - LOGGING_LEVEL_ORG_HL7_FHIR_COMMON_HAPI_VALIDATION=DEBUG
