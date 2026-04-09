@@ -60,23 +60,6 @@ public class TerminologyInterceptor implements IClientInterceptor {
         if (!token.isEmpty()) {
             theRequest.addHeader("Authorization", "Bearer " + token);
         }
-
-        // Inject SNOMED version for all $validate-code calls that don't already
-        // specify one. The URL is just the Ontoserver base + CodeSystem/$validate-code
-        // — it won't contain "snomed", so we check for the operation name only.
-        try {
-            String uri = theRequest.getUri();
-            if (uri.contains("$validate-code") && !uri.contains("system-version")) {
-                String separator = uri.contains("?") ? "&" : "?";
-                String newUri = uri + separator
-                        + "system-version="
-                        + URLEncoder.encode(SNOMED_VERSION, StandardCharsets.UTF_8);
-                theRequest.setUri(newUri);
-                System.out.println("[INTERCEPTOR] Injected system-version into: " + newUri);
-            }
-        } catch (Exception e) {
-            System.err.println("[INTERCEPTOR] Could not inject SNOMED version: " + e.getMessage());
-        }
     }
 
     @Override

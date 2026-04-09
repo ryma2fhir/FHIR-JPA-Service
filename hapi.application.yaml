@@ -90,14 +90,6 @@ hapi:
           client_interceptor_beans:
             - terminologyInterceptor
 
-    remote_terminology_service:
-      snomed:
-        system: "http://snomed.info/sct/83821000000107/version/20260211"
-        system_version: "http://snomed.info/sct/83821000000107/version/20260211"
-        url: '${ONTO_SERVER_URL}'
-        client_interceptor_beans:
-          - terminologyInterceptor
-
     logical_urls:
       - http://terminology.hl7.org/*
       - https://terminology.hl7.org/*
