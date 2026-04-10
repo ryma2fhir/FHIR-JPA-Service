@@ -5,10 +5,10 @@ services:
     ports:
       - "8080:8080"
     env_file:
-      ONTO_AUTH_URL: ${ONTO_AUTH_URL}
-      ONTO_SERVER_URL: ${ONTO_SERVER_URL}
-      ONTO_CLIENT_ID: ${ONTO_CLIENT_ID}
-      ONTO_CLIENT_SECRET: ${ONTO_CLIENT_SECRET}
+      ONTO_AUTH_URL=${ONTO_AUTH_URL}
+      ONTO_SERVER_URL=${ONTO_SERVER_URL}
+      ONTO_CLIENT_ID=${ONTO_CLIENT_ID}
+      ONTO_CLIENT_SECRET=${ONTO_CLIENT_SECRET}
       
       
     volumes:
