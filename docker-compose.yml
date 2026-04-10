@@ -4,19 +4,18 @@ services:
     image: "hapiproject/hapi:v8.8.0-1"
     ports:
       - "8080:8080"
+
     environment:
-      ONTO_AUTH_URL=${ONTO_AUTH_URL}
-      ONTO_SERVER_URL=${ONTO_SERVER_URL}
-      ONTO_CLIENT_ID=${ONTO_CLIENT_ID}
-      ONTO_CLIENT_SECRET=${ONTO_CLIENT_SECRET}
-      
-      
+      ONTO_AUTH_URL: ${ONTO_AUTH_URL}
+      ONTO_SERVER_URL: ${ONTO_SERVER_URL}
+      ONTO_CLIENT_ID: ${ONTO_CLIENT_ID}
+      ONTO_CLIENT_SECRET: ${ONTO_CLIENT_SECRET}
+      hapi_fhir_custom_bean_packages: com.nhs
+      hapi_fhir_custom_interceptor_classes: com.nhs.TerminologyInterceptor
+      LOGGING_LEVEL_CA_UHN_FHIR_JPA_TERMINOLOGY: DEBUG
+      LOGGING_LEVEL_CA_UHN_FHIR_VALIDATION: DEBUG
+      LOGGING_LEVEL_ORG_HL7_FHIR_COMMON_HAPI_VALIDATION: DEBUG
+
     volumes:
       - ./target/term-interceptor-1.0.jar:/app/extra-classes/interceptor.jar:ro
       - ./hapi.application.yaml:/app/config/application.yaml:ro
-    environment:
-      - hapi_fhir_custom_bean_packages=com.nhs
-      - hapi_fhir_custom_interceptor_classes=com.nhs.TerminologyInterceptor
-      - LOGGING_LEVEL_CA_UHN_FHIR_JPA_TERMINOLOGY=DEBUG
-      - LOGGING_LEVEL_CA_UHN_FHIR_VALIDATION=DEBUG
-      - LOGGING_LEVEL_ORG_HL7_FHIR_COMMON_HAPI_VALIDATION=DEBUG
