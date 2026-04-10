@@ -4,7 +4,7 @@ services:
     image: "hapiproject/hapi:v8.8.0-1"
     ports:
       - "8080:8080"
-    env_file:
+    environment:
       ONTO_AUTH_URL=${ONTO_AUTH_URL}
       ONTO_SERVER_URL=${ONTO_SERVER_URL}
       ONTO_CLIENT_ID=${ONTO_CLIENT_ID}
