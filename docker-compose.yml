@@ -4,7 +4,13 @@ services:
     image: "hapiproject/hapi:v8.8.0-1"
     ports:
       - "8080:8080"
-    env_file: .env
+    env_file:
+      ONTO_AUTH_URL: ${ONTO_AUTH_URL}
+      ONTO_SERVER_URL: ${ONTO_SERVER_URL}
+      ONTO_CLIENT_ID: ${ONTO_CLIENT_ID}
+      ONTO_CLIENT_SECRET: ${ONTO_CLIENT_SECRET}
+      
+      
     volumes:
       - ./target/term-interceptor-1.0.jar:/app/extra-classes/interceptor.jar:ro
       - ./hapi.application.yaml:/app/config/application.yaml:ro
