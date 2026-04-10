@@ -1,12 +1,10 @@
 package com.nhs;
 
 import ca.uhn.fhir.context.FhirContext;
-import ca.uhn.fhir.context.support.IValidationSupport;
 import ca.uhn.fhir.jpa.validation.JpaValidationSupportChain;
 import org.hl7.fhir.common.hapi.validation.support.InMemoryTerminologyServerValidationSupport;
 import org.hl7.fhir.common.hapi.validation.support.RemoteTerminologyServiceValidationSupport;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Configuration;
 
 import jakarta.annotation.PostConstruct;
