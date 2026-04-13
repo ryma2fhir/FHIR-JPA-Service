@@ -79,6 +79,7 @@ hapi:
     fhir_version: R4
     allow_external_references: true
     allow_external_valueset_expansion: true
+    ig_runtime_upload_enabled: true
 
     terminology:
       valueset_preexpansion_mode: IGNORE
