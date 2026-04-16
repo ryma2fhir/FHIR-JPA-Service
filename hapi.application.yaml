@@ -95,7 +95,7 @@ hapi:
       - http://terminology.hl7.org/*
       - https://terminology.hl7.org/*
 
-    implementationguides:
+    #implementationguides:
       #ukcore:
       #  name: fhir.r4.ukcore.stu3.currentbuild
       #  version: 0.28.0-pre-release
