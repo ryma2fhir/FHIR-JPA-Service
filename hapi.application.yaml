@@ -94,6 +94,8 @@ hapi:
     logical_urls:
       - http://terminology.hl7.org/*
       - https://terminology.hl7.org/*
+      - http://fhir.hl7.org.uk/*
+      - https://fhir.hl7.org.uk/*
 
     #implementationguides:
       #ukcore:
