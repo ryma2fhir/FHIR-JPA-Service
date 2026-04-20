@@ -95,12 +95,12 @@ hapi:
       - http://terminology.hl7.org/*
       - https://terminology.hl7.org/*
 
-    implementationguides:
-      ukcore:
-        name: fhir.r4.ukcore.stu3.currentbuild
-        version: 0.28.0-pre-release
-        reloadExisting: false
-        installMode: STORE_AND_INSTALL
+    #implementationguides:
+    #  ukcore:
+    #    name: fhir.r4.ukcore.stu3.currentbuild
+    #    version: 0.28.0-pre-release
+    #    reloadExisting: false
+    #    installMode: STORE_AND_INSTALL
 
     data:
       search_parameter_mode: USE_SEARCH_PARAMETERS
