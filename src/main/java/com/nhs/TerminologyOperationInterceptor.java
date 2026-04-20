@@ -26,7 +26,7 @@ import java.util.Enumeration;
 public class TerminologyOperationInterceptor extends OncePerRequestFilter {
 
     private static final String[] TERMINOLOGY_OPERATIONS = {
-        "$expand", "$validate-code", "$lookup", "$translate"
+        "$expand", "$lookup", "$translate"
     };
 
     private final String ontoServerUrl;
