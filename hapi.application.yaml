@@ -76,10 +76,10 @@ spring:
 hapi:
   fhir:
     terminology:
-      valueset_preexpansion_mode: IGNORE
-      valueset_expansion_mode: USE_EXPANSION_OPERATION
-      valueset_membership_mode: USE_VALIDATE_CODE_OPERATION
-      code_lookup_mode: USE_VALIDATE_CODE_OPERATION
+      valueset_preexpansion_mode: IGNORE                # Never use pre-expanded, always expand live
+      valueset_expansion_mode: USE_EXPANSION_OPERATION  # Call $expand on Ontoserver
+      valueset_membership_mode: USE_EXPANSION           # Check membership via expansion result
+      code_lookup_mode: USE_VALIDATE_CODE_OPERATION     # Individual code lookups go to Ontoserver
       remote_terminology:
         - url: '${ONTO_SERVER_URL}'
           client_interceptor_beans:
