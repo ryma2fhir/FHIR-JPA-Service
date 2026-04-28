@@ -78,16 +78,27 @@ hapi:
     terminology:
       valueset_preexpansion_mode: IGNORE                # Never use pre-expanded, always expand live
       valueset_expansion_mode: USE_EXPANSION_OPERATION  # Call $expand on Ontoserver
-      valueset_membership_mode: USE_EXPANSION           # Check membership via expansion result
+      valueset_membership_mode: USE_VALIDATE_CODE_OPERATION           # Check membership via expansion result
       code_lookup_mode: USE_VALIDATE_CODE_OPERATION     # Individual code lookups go to Ontoserver
       remote_terminology:
         - url: '${ONTO_SERVER_URL}'
           client_interceptor_beans:
             - terminologyInterceptor
+      # Disable the background pre-expansion scheduler entirely
+      # It cannot handle SNOMED filter-based ValueSets locally
+      deferred_indexing_for_codesystems_of_size: 0
+    schedule_task_enabled: false
 
     logical_urls:
       - http://terminology.hl7.org/*
       - https://terminology.hl7.org/*
+      - http://snomed.info/sct*          # SNOMED CT
+      - https://dmd.nhs.uk*              # dm+d
+      - http://hl7.org/fhir/sid/icd-10* # ICD-10
+      - https://icd.who.int/browse10*    # ICD-10 alternative URL
+      - http://read.info*                # READ codes
+      - https://nicip.nhs.uk*            # NICIP
+      - http://www.datadictionary.nhs.uk/data_dictionary/attributes/o/opcs_4* # OPCS-4
 
     #implementationguides:
     #  ukcore:

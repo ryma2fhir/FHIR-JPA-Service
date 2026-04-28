@@ -24,7 +24,6 @@ public class TerminologyInterceptor implements IClientInterceptor {
     private final String TOKEN_URL;
     private final String CLIENT_ID;
     private final String CLIENT_SECRET;
-    private final String SNOMED_VERSION;
 
     // --- Token state ---
     private volatile String token = "";
@@ -40,20 +39,10 @@ public class TerminologyInterceptor implements IClientInterceptor {
         this.TOKEN_URL     = requireEnv("ONTO_AUTH_URL");
         this.CLIENT_ID     = requireEnv("ONTO_CLIENT_ID");
         this.CLIENT_SECRET = requireEnv("ONTO_CLIENT_SECRET");
-        String version = System.getenv("SNOMED_VERSION");
-        this.SNOMED_VERSION = (version != null && !version.isBlank())
-                ? version
-                : "http://snomed.info/sct/83821000000107/version/20260311";
-        System.out.println("[INTERCEPTOR] Using SNOMED version: " + this.SNOMED_VERSION);
     }
-
-    // -------------------------------------------------------------------------
-    // IClientInterceptor
-    // -------------------------------------------------------------------------
 
     @Override
     public void interceptRequest(IHttpRequest theRequest) {
-        // Refresh token if missing or expiring within the next 60 seconds
         if (token.isEmpty() || Instant.now().isAfter(expiry.minusSeconds(60))) {
             refreshToken();
         }
@@ -66,10 +55,6 @@ public class TerminologyInterceptor implements IClientInterceptor {
     public void interceptResponse(IHttpResponse theResponse) {
         // No-op
     }
-
-    // -------------------------------------------------------------------------
-    // Token refresh (double-checked locking)
-    // -------------------------------------------------------------------------
 
     private synchronized void refreshToken() {
         if (!token.isEmpty() && Instant.now().isBefore(expiry.minusSeconds(60))) {
@@ -115,10 +100,6 @@ public class TerminologyInterceptor implements IClientInterceptor {
             System.err.println("[INTERCEPTOR ERROR] Exception during token refresh: " + e.getMessage());
         }
     }
-
-    // -------------------------------------------------------------------------
-    // Helpers
-    // -------------------------------------------------------------------------
 
     public String getBearerToken() {
         if (token.isEmpty() || Instant.now().isAfter(expiry.minusSeconds(60))) {

@@ -15,13 +15,6 @@ import java.net.HttpURLConnection;
 import java.net.URI;
 import java.util.Enumeration;
 
-/**
- * Servlet filter that intercepts FHIR terminology operations
- * ($expand, $validate-code, $lookup, $translate) and proxies
- * them directly to the remote terminology server with a Bearer token.
- *
- * This runs at the servlet level, before HAPI processes the request.
- */
 @Component
 public class TerminologyOperationInterceptor extends OncePerRequestFilter {
 
@@ -47,7 +40,6 @@ public class TerminologyOperationInterceptor extends OncePerRequestFilter {
         String uri = request.getRequestURI();
 
         if (!isTerminologyOperation(uri)) {
-            // Not a terminology operation — pass through to HAPI normally
             filterChain.doFilter(request, response);
             return;
         }
@@ -55,14 +47,12 @@ public class TerminologyOperationInterceptor extends OncePerRequestFilter {
         System.out.printf("[PROXY] Intercepted %s %s — forwarding to %s%n",
                 request.getMethod(), uri, ontoServerUrl);
 
-        // Build the target URL: strip /fhir prefix, append query string
         String targetPath = uri.replaceFirst("^/fhir", "");
         String queryString = request.getQueryString();
         String targetUrl = ontoServerUrl + targetPath +
                 (queryString != null ? "?" + queryString : "");
 
         proxyRequest(request, response, targetUrl);
-        // Do NOT call filterChain.doFilter() — we've handled the response
     }
 
     private void proxyRequest(
@@ -80,7 +70,6 @@ public class TerminologyOperationInterceptor extends OncePerRequestFilter {
         conn.setConnectTimeout(10_000);
         conn.setReadTimeout(30_000);
 
-        // Forward original headers (except Host)
         Enumeration<String> headerNames = inbound.getHeaderNames();
         while (headerNames.hasMoreElements()) {
             String name = headerNames.nextElement();
@@ -89,12 +78,10 @@ public class TerminologyOperationInterceptor extends OncePerRequestFilter {
             }
         }
 
-        // Inject the Bearer token
         if (token != null && !token.isEmpty()) {
             conn.setRequestProperty("Authorization", "Bearer " + token);
         }
 
-        // Forward request body if present
         if (conn.getDoOutput()) {
             try (InputStream in = inbound.getInputStream();
                  OutputStream out = conn.getOutputStream()) {
@@ -102,7 +89,6 @@ public class TerminologyOperationInterceptor extends OncePerRequestFilter {
             }
         }
 
-        // Stream the remote response back to the caller
         int status = conn.getResponseCode();
         outbound.setStatus(status);
         outbound.setContentType(conn.getContentType());
